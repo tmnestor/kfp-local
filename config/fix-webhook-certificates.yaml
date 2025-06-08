@@ -1,0 +1,62 @@
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: selfsigned-issuer
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: webhook-server-tls
+  namespace: kubeflow
+spec:
+  secretName: webhook-server-tls
+  issuerRef:
+    name: selfsigned-issuer
+    kind: ClusterIssuer
+  dnsNames:
+  - cache-server.kubeflow.svc
+  - cache-server.kubeflow.svc.cluster.local
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: webhook-certs
+  namespace: kubeflow
+spec:
+  secretName: webhook-certs
+  issuerRef:
+    name: selfsigned-issuer
+    kind: ClusterIssuer
+  dnsNames:
+  - admission-webhook-service.kubeflow.svc
+  - admission-webhook-service.kubeflow.svc.cluster.local
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: katib-webhook-cert
+  namespace: kubeflow
+spec:
+  secretName: katib-webhook-cert
+  issuerRef:
+    name: selfsigned-issuer
+    kind: ClusterIssuer
+  dnsNames:
+  - katib-controller.kubeflow.svc
+  - katib-controller.kubeflow.svc.cluster.local
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: webhook-server-cert
+  namespace: kubeflow
+spec:
+  secretName: webhook-server-cert
+  issuerRef:
+    name: selfsigned-issuer
+    kind: ClusterIssuer
+  dnsNames:
+  - pvcviewer-controller-manager-service.kubeflow.svc
+  - pvcviewer-controller-manager-service.kubeflow.svc.cluster.local

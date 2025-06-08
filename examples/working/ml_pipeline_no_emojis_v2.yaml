@@ -1,0 +1,274 @@
+# PIPELINE DEFINITION
+# Name: ml-pipeline-no-emojis-v2
+# Description: ML data processing pipeline using KFP v2 syntax
+# Outputs:
+#    Output: str
+components:
+  comp-analyze-data-op:
+    executorLabel: exec-analyze-data-op
+    inputDefinitions:
+      parameters:
+        clean_data_summary:
+          parameterType: STRING
+    outputDefinitions:
+      parameters:
+        Output:
+          parameterType: STRING
+  comp-clean-data-op:
+    executorLabel: exec-clean-data-op
+    inputDefinitions:
+      parameters:
+        data_summary:
+          parameterType: STRING
+    outputDefinitions:
+      parameters:
+        Output:
+          parameterType: STRING
+  comp-generate-data-op:
+    executorLabel: exec-generate-data-op
+    outputDefinitions:
+      parameters:
+        Output:
+          parameterType: STRING
+  comp-generate-report-op:
+    executorLabel: exec-generate-report-op
+    inputDefinitions:
+      parameters:
+        analysis_summary:
+          parameterType: STRING
+    outputDefinitions:
+      parameters:
+        Output:
+          parameterType: STRING
+deploymentSpec:
+  executors:
+    exec-analyze-data-op:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - analyze_data_op
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.13.0'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"' && \"\
+          $0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef analyze_data_op(clean_data_summary: str) -> str:\n    \"\"\"\
+          Step 3: Perform statistical analysis\"\"\"\n    import random\n\n    print(\"\
+          === DATA ANALYSIS STEP ===\")\n    print(f\"Analyzing: {clean_data_summary}\"\
+          )\n\n    # Simulate analysis results\n    mean_temp = round(20 + random.gauss(0,\
+          \ 2), 2)\n    std_dev = round(abs(random.gauss(3, 1)), 2)\n    correlation\
+          \ = round(random.uniform(0.7, 0.95), 3)\n\n    print(\"Statistical Analysis\
+          \ Results:\")\n    print(f\"Mean temperature: {mean_temp}\xB0C\")\n    print(f\"\
+          Standard deviation: {std_dev}\xB0C\")\n    print(f\"Data correlation: {correlation}\"\
+          )\n    print(f\"Quality score: {correlation * 100:.1f}%\")\n    print(\"\
+          Statistical analysis completed!\")\n\n    return f\"Analysis: mean={mean_temp}\xB0\
+          C, std={std_dev}\xB0C, quality={correlation*100:.1f}%\"\n\n"
+        image: python:3.9-slim
+    exec-clean-data-op:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - clean_data_op
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.13.0'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"' && \"\
+          $0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef clean_data_op(data_summary: str) -> str:\n    \"\"\"Step 2: Clean\
+          \ and validate the data\"\"\"\n    import random\n\n    print(\"=== DATA\
+          \ CLEANING STEP ===\")\n    print(f\"Processing data: {data_summary}\")\n\
+          \n    # Simulate data cleaning process\n    total_records = 50\n    outliers_found\
+          \ = random.randint(2, 5)\n    valid_records = total_records - outliers_found\n\
+          \n    print(f\"Processing {total_records} records...\")\n    print(f\"Found\
+          \ and removed {outliers_found} outliers\")\n    print(f\"Clean dataset:\
+          \ {valid_records} valid records\")\n    print(\"Data cleaning completed!\"\
+          )\n\n    return f\"Cleaned data: {valid_records} valid records\"\n\n"
+        image: python:3.9-slim
+    exec-generate-data-op:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - generate_data_op
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.13.0'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"' && \"\
+          $0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef generate_data_op() -> str:\n    \"\"\"Step 1: Generate sample\
+          \ dataset\"\"\"\n    import random\n\n    print(\"=== DATA GENERATION STEP\
+          \ ===\")\n\n    # Generate sample data\n    num_samples = 50\n    temperatures\
+          \ = []\n\n    for i in range(num_samples):\n        temp = round(20 + random.gauss(0,\
+          \ 5), 2)  # Normal distribution around 20\xB0C\n        temperatures.append(temp)\n\
+          \n    avg_temp = sum(temperatures) / len(temperatures)\n    min_temp = min(temperatures)\n\
+          \    max_temp = max(temperatures)\n\n    print(f\"Generated {num_samples}\
+          \ temperature readings\")\n    print(f\"Temperature range: {min_temp:.2f}\xB0\
+          C to {max_temp:.2f}\xB0C\")\n    print(f\"Average temperature: {avg_temp:.2f}\xB0\
+          C\")\n    print(\"Data generation completed!\")\n\n    return f\"Generated\
+          \ {num_samples} samples, avg: {avg_temp:.2f}\xB0C\"\n\n"
+        image: python:3.9-slim
+    exec-generate-report-op:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - generate_report_op
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.13.0'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"' && \"\
+          $0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef generate_report_op(analysis_summary: str) -> str:\n    \"\"\"\
+          Step 4: Generate final report\"\"\"\n    from datetime import datetime\n\
+          \n    print(\"=== REPORT GENERATION STEP ===\")\n    print(f\"Creating report\
+          \ from: {analysis_summary}\")\n\n    report = f\"\"\"\n    ========================================\n\
+          \    ML DATA PROCESSING PIPELINE REPORT (v2)\n    ========================================\n\
+          \n    Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n    PIPELINE\
+          \ SUMMARY:\n    Step 1: Data Generation - COMPLETED\n    Step 2: Data Cleaning\
+          \ - COMPLETED  \n    Step 3: Statistical Analysis - COMPLETED\n    Step\
+          \ 4: Report Generation - COMPLETED\n\n    WORKFLOW RESULTS:\n    Multi-pod\
+          \ execution: SUCCESS\n    KFP v2 data passing: OPERATIONAL\n    Sequential\
+          \ workflow completed properly\n    Data processing pipeline validated\n\n\
+          \    ML PIPELINE FEATURES DEMONSTRATED:\n    KFP v2 @dsl.component decorators\n\
+          \    Automatic data passing via .output\n    Independent container execution\
+          \ per step\n    Sequential workflow orchestration\n    Kubeflow Pipelines\
+          \ UI integration\n    Production-ready ML workflow pattern\n\n    ANALYSIS\
+          \ RESULTS:\n    {analysis_summary}\n\n    STATUS: KFP v2 PIPELINE SUCCESSFUL\n\
+          \n    This demonstrates a working KFP v2 multi-step ML pipeline\n    with\
+          \ automatic data passing between components!\n    ========================================\n\
+          \    \"\"\"\n\n    print(report)\n    print(\"KFP v2 ML pipeline completed\
+          \ successfully!\")\n\n    return \"KFP v2 Pipeline execution completed successfully\"\
+          \n\n"
+        image: python:3.9-slim
+pipelineInfo:
+  description: ML data processing pipeline using KFP v2 syntax
+  name: ml-pipeline-no-emojis-v2
+root:
+  dag:
+    outputs:
+      parameters:
+        Output:
+          valueFromParameter:
+            outputParameterKey: Output
+            producerSubtask: generate-report-op
+    tasks:
+      analyze-data-op:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-analyze-data-op
+        dependentTasks:
+        - clean-data-op
+        inputs:
+          parameters:
+            clean_data_summary:
+              taskOutputParameter:
+                outputParameterKey: Output
+                producerTask: clean-data-op
+        taskInfo:
+          name: analyze-data-op
+      clean-data-op:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-clean-data-op
+        dependentTasks:
+        - generate-data-op
+        inputs:
+          parameters:
+            data_summary:
+              taskOutputParameter:
+                outputParameterKey: Output
+                producerTask: generate-data-op
+        taskInfo:
+          name: clean-data-op
+      generate-data-op:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-generate-data-op
+        taskInfo:
+          name: generate-data-op
+      generate-report-op:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-generate-report-op
+        dependentTasks:
+        - analyze-data-op
+        inputs:
+          parameters:
+            analysis_summary:
+              taskOutputParameter:
+                outputParameterKey: Output
+                producerTask: analyze-data-op
+        taskInfo:
+          name: generate-report-op
+  outputDefinitions:
+    parameters:
+      Output:
+        parameterType: STRING
+schemaVersion: 2.1.0
+sdkVersion: kfp-2.13.0

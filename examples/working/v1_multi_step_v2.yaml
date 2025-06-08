@@ -1,0 +1,185 @@
+# PIPELINE DEFINITION
+# Name: v2-multi-step-pipeline
+# Description: KFP v2 multi-step pipeline with data passing
+# Outputs:
+#    Output: str
+components:
+  comp-step-a-op:
+    executorLabel: exec-step-a-op
+    outputDefinitions:
+      parameters:
+        Output:
+          parameterType: STRING
+  comp-step-b-op:
+    executorLabel: exec-step-b-op
+    inputDefinitions:
+      parameters:
+        message_from_a:
+          parameterType: STRING
+    outputDefinitions:
+      parameters:
+        Output:
+          parameterType: STRING
+  comp-step-c-op:
+    executorLabel: exec-step-c-op
+    inputDefinitions:
+      parameters:
+        message_from_b:
+          parameterType: STRING
+    outputDefinitions:
+      parameters:
+        Output:
+          parameterType: STRING
+deploymentSpec:
+  executors:
+    exec-step-a-op:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - step_a_op
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.13.0'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"' && \"\
+          $0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef step_a_op() -> str:\n    \"\"\"Step A: Generate a simple message.\"\
+          \"\"\n    print(\"Step A executing: Hello from Step A\")\n    return \"\
+          Hello from Step A\"\n\n"
+        image: python:3.9-slim
+    exec-step-b-op:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - step_b_op
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.13.0'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"' && \"\
+          $0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef step_b_op(message_from_a: str) -> str:\n    \"\"\"Step B: Process\
+          \ message from Step A.\"\"\" \n    print(f\"Step B executing: Received '{message_from_a}'\"\
+          )\n    print(\"Step B executing: Hello from Step B\")\n    result = f\"\
+          Step B processed: {message_from_a}\"\n    print(f\"Step B result: {result}\"\
+          )\n    return result\n\n"
+        image: python:3.9-slim
+    exec-step-c-op:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - step_c_op
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.13.0'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"' && \"\
+          $0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef step_c_op(message_from_b: str) -> str:\n    \"\"\"Step C: Final\
+          \ step with data from previous steps.\"\"\"\n    print(f\"Step C executing:\
+          \ Received '{message_from_b}'\")\n    print(\"Step C executing: Hello from\
+          \ Step C - Pipeline Complete!\")\n    print(\"Multi-step KFP v2 pipeline\
+          \ completed successfully!\")\n    final_result = f\"Step C final: {message_from_b}\
+          \ -> Pipeline Complete!\"\n    print(f\"Final result: {final_result}\")\n\
+          \    return final_result\n\n"
+        image: python:3.9-slim
+pipelineInfo:
+  description: KFP v2 multi-step pipeline with data passing
+  name: v2-multi-step-pipeline
+root:
+  dag:
+    outputs:
+      parameters:
+        Output:
+          valueFromParameter:
+            outputParameterKey: Output
+            producerSubtask: step-c-op
+    tasks:
+      step-a-op:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-step-a-op
+        taskInfo:
+          name: step-a-op
+      step-b-op:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-step-b-op
+        dependentTasks:
+        - step-a-op
+        inputs:
+          parameters:
+            message_from_a:
+              taskOutputParameter:
+                outputParameterKey: Output
+                producerTask: step-a-op
+        taskInfo:
+          name: step-b-op
+      step-c-op:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-step-c-op
+        dependentTasks:
+        - step-b-op
+        inputs:
+          parameters:
+            message_from_b:
+              taskOutputParameter:
+                outputParameterKey: Output
+                producerTask: step-b-op
+        taskInfo:
+          name: step-c-op
+  outputDefinitions:
+    parameters:
+      Output:
+        parameterType: STRING
+schemaVersion: 2.1.0
+sdkVersion: kfp-2.13.0
